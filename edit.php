@@ -4,8 +4,8 @@ require('dbconnect.php');
 
 // var_dump($_GET['tweet_id']);
 
-
-if (isset($_GET)) {
+// $_GETの値が空ではない時＝セットされている時
+if (!empty($_GET)) {
 $sql = 'SELECT * FROM `tweets` WHERE `tweet_id`=?';
 $data = array($_GET['tweet_id']);
 $stmt = $dbh->prepare($sql);
@@ -21,28 +21,31 @@ echo '<br>';
 echo '<br>';
 echo '<br>';
 
-if ($_GET['tweet_id'] == '') {
-   $error['tweet_id'] = 'blank';
+// POST送信された時
+if (!empty($_POST)) {
+  # code...
+
+// 入力チェック
+if ($_POST['tweet'] == '') {
+   $error['tweet'] = 'blank';
   }
 
-if (condition) {
-  # code...
-}
-
-
-
-if (!empty($_POST)) {
-  $sql = 'UPDATE `tweets` SET `tweet`=?,`tweet_id`=?,`modified`=NOW() WHERE `tweet_id`=?';
+// エラーがセットされていない時
+if (!isset($error)) {
+  // SQL文作成
+  // Update文
+  $sql = 'UPDATE `tweets` SET `tweet`=?,`modified`=NOW() WHERE `tweet_id`=?';
   $data = array($_POST['tweet'],$_GET['tweet_id']);
   $stmt = $dbh->prepare($sql);
   $stmt->execute($data);
 
+// 一覧へ移動する。
   header('Location: index.php');
   exit();
 
-}
-
- ?>
+ }
+  }
+   ?>
 
 
 <!DOCTYPE html>
@@ -93,7 +96,18 @@ if (!empty($_POST)) {
 
         <div class="msg">
           <form method="POST" action="" class="form-horizontal" role="form">
+          <!-- つぶやき -->
 
+          <div class="form-group">
+            <label class="col-sm-4 control-label">つぶやき</label>
+            <div class="col-sm-8">
+              <textarea name="tweet" cols="50" rows="5" class="form-control" placeholder="例：Hello World!"><?php echo $tweet_edit['tweet']; ?></textarea>
+              <?php if (isset($error) && ($error['tweet'] == 'blank')) { ?>
+                <p class="error">なんか入れろ</p>
+             <?php } ?>
+              
+            </div>
+          </div>
             <ul class="paging">
               <input type="submit" class="btn btn-info" value="更新">
             </ul>

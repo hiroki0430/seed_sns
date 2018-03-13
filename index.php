@@ -42,7 +42,7 @@ if (!isset($error)) {
   // modified=現在日時。now()を使用
 
 $sql = 'INSERT INTO `tweets` SET `tweet`=? ,`member_id`=? , `reply_tweet_id`=? , `created`=NOW(),`modified`=NOW()';
-$data = array($_POST['tweet'],$_SESSION['id'],-1);
+$data = array($_POST['tweet'],$_SESSION['id'], -1);
 $stmt = $dbh->prepare($sql);
 $stmt->execute($data);
 
@@ -64,7 +64,7 @@ $stmt->execute($data);
 
 
 
-$tweet_sql = 'SELECT * FROM `tweets` LEFT JOIN `members` ON `tweets`.`member_id`=`members`.`member_id` WHERE `delete_flag`=0 ORDER BY `tweets`.`created` DESC';
+$tweet_sql = 'SELECT * FROM `tweets` LEFT JOIN `members` ON `tweets`.`member_id`=`members`.`member_id` WHERE `delete_flag`=0 ORDER BY `tweets`.`modified` DESC';
 $tweet_stmt = $dbh->prepare($tweet_sql);
 $tweet_stmt->execute();
 
@@ -162,11 +162,17 @@ while (true) {
           </p>
           <p class="day">
             <a href="view.html">
-              <?php echo $one_tweet['created']; ?>
-            </a>
+              <?php echo $one_tweet["modified"];
+              // strtotime 文字型のデータを日時型に変換できる
+              $modify_date = date("Y-m-d H:i",strtotime($modify_date));
 
+               echo $modify_date;
+
+               ?>
+
+            </a>
             [<a href="edit.php?tweet_id=<?php echo $one_tweet['tweet_id'];?>" style="color: green;">編集</a>]
-            [<a href="delete.php?action=delete&tweet_id=<?php echo $one_tweet['tweet_id'];?>" style="color: #F33;">削除</a>]
+            [<a href="delete.php?tweet_id=<?php echo $one_tweet['tweet_id'];?>" style="color: #F33;">削除</a>]
           </p>
         </div>
         <?php } ?>
