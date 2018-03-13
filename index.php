@@ -4,6 +4,7 @@ require('dbconnect.php');
 session_start();
 
 // ログインチェック
+// １時間ログインしてない場合は、再度ログイン
 if (isset($_SESSION['id']) && $_SESSION['time'] + 3600 > time()) {
 // ログインしている
   //ログイン時間の更新
@@ -16,24 +17,15 @@ $login_stmt = $dbh->prepare($login_sql);
 $login_stmt->execute($login_data);
 $login_member = $login_stmt->fetch(PDO::FETCH_ASSOC);
 
-// ログインしている
-// 強制遷移する
 } else {
-  // ログインしてない
+  // ログインしてない、時間切れ
   // ログイン画面へ強制遷移する
 header('Location: login.php');
 exit;
 }
 
 // 呟くボタンが押された時
-
 if(!empty($_POST)) {
-
-
-
-
-
-
 
 // 入力チェック
 if ($_POST['tweet'] == '') {
@@ -41,15 +33,23 @@ if ($_POST['tweet'] == '') {
 }
 
 if (!isset($error)) {
+
+  // SQL文作成（INSERT INTO)
+  // tweet=つぶやいた内容
+  // member_id=ログインした人のid
+  // reply_tweet_id=-1
+  // created=現在日時。now()を使用
+  // modified=現在日時。now()を使用
+
 $sql = 'INSERT INTO `tweets` SET `tweet`=? ,`member_id`=? , `reply_tweet_id`=? , `created`=NOW(),`modified`=NOW()';
 $data = array($_POST['tweet'],$_SESSION['id'],-1);
 $stmt = $dbh->prepare($sql);
 $stmt->execute($data);
 
-}
+  }
 }
 
-// // 名前が表示されるようにする
+// 名前が表示されるようにする
 // $login_sql = 'SELECT * FROM `members` WHERE `member_id` = ?';
 // $login_data =array();
 
@@ -64,7 +64,7 @@ $stmt->execute($data);
 
 
 
-$tweet_sql = 'SELECT * FROM `tweets` LEFT JOIN `members` ON `tweets`.`member_id`=`members`.`member_id` ORDER BY `tweets`.`created` DESC';
+$tweet_sql = 'SELECT * FROM `tweets` LEFT JOIN `members` ON `tweets`.`member_id`=`members`.`member_id` WHERE `delete_flag`=0 ORDER BY `tweets`.`created` DESC';
 $tweet_stmt = $dbh->prepare($tweet_sql);
 $tweet_stmt->execute();
 
@@ -76,14 +76,12 @@ while (true) {
   $tweet = $tweet_stmt->fetch(PDO::FETCH_ASSOC);
   if ($tweet == false) {
     break;
-  }$tweet_list[] = $tweet;
-
+  }
+  $tweet_list[] = $tweet;
 
 }
 
-
  ?>
-
 
 
 <!DOCTYPE html>
@@ -155,24 +153,24 @@ while (true) {
       </div>
 
       <div class="col-md-8 content-margin-top">
-
+         <?php foreach ($tweet_list as $one_tweet) { ?>
         <div class="msg">
-          <img src="http://c85c7a.medialib.glogster.com/taniaarca/media/71/71c8671f98761a43f6f50a282e20f0b82bdb1f8c/blog-images-1349202732-fondo-steve-jobs-ipad.jpg" width="48" height="48">
+          <img src="picture_path/<?php echo $one_tweet['picture_path']; ?>" width="48" height="48">
           <p>
             <?php echo $one_tweet['tweet']; ?><span class="name"> (<?php echo $one_tweet['nick_name']; ?>) </span>
             [<a href="#">Re</a>]
           </p>
           <p class="day">
             <a href="view.html">
-              2016-01-28 18:04
+              <?php echo $one_tweet['created']; ?>
             </a>
-            <?php echo $one_tweet['created']; ?>
-            [<a href="#" style="color: #00994C;">編集</a>]
-            [<a href="#" style="color: #F33;">削除</a>]
+
+            [<a href="edit.php?tweet_id=<?php echo $one_tweet['tweet_id'];?>" style="color: green;">編集</a>]
+            [<a href="delete.php?action=delete&tweet_id=<?php echo $one_tweet['tweet_id'];?>" style="color: #F33;">削除</a>]
           </p>
         </div>
+        <?php } ?>
       </div>
-
     </div>
   </div>
 

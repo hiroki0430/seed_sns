@@ -3,9 +3,6 @@ session_start();
 require('dbconnect.php');
 
 // cookieにログイン情報が保存されていたら自動でログイン
-// if (isset($_COOKIE['email']) && !empty(var)) {
-//   # code...
-// }
 
 if (isset($_COOKIE['email']) && !empty($_COOKIE['email'])) {
    $_POST['email'] = $_COOKIE['email'];
@@ -15,13 +12,16 @@ if (isset($_COOKIE['email']) && !empty($_COOKIE['email'])) {
    $_POST['save'] = 'on';
  }
 
+// ログインボタンが押された時
+// $_POSTはarray型なのでPOST送信されていない時は要素が0個の配列
+// その場合、isset関数ではnullではなく、0個の配列があるという事でtrueになる。
 
-if (!empty($_POST) && isset($_POST)) {
+if (!empty($_POST)) {
 
 // ログイン承認処理
 //sha1で入力したものをまた暗号化して、暗号化したものと一致するものを探す
 
-  $sql = 'SELECT * FROM `members` WHERE `email`=? AND `password`=?';
+$sql = 'SELECT * FROM `members` WHERE `email`=? AND `password`=?';
 $data = array($_POST['email'], sha1($_POST['password']));
 $stmt = $dbh->prepare($sql);
 $stmt->execute($data);
@@ -55,19 +55,16 @@ if ($_POST['save'] == 'on') {
 
   // setcookie(保存したいカラム名、保存したい値、保存したい期間：秒数) = $_COOKIEに値をセットする
 
-  setcookie('email', $_POST['email'], time()+60*60*24*14);
-  setcookie('password' , $_POST['password'],time()+60*60*24*14);
+  setcookie('email' , $_POST['email'] , time()+60*60*24*14);
+  setcookie('password' , $_POST['password'] , time()+60*60*24*14);
 }
 
 // 4,ログイン後の画面に繊維
 header('Location: index.php');
 exit;
 }
-
-}
-
- ?>
-
+ }
+  ?>
 
 
 <!DOCTYPE html>

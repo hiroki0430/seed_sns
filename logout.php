@@ -16,8 +16,8 @@ if (ini_get('session.use_cookies')) {
 session_destroy();
 
 // cookieの情報も削除
-setcookie('email','',time() -3000);
-setcookie('password','',time() -3000);
+setcookie('email', '', time() -3000);
+setcookie('password', '', time() -3000);
 
 // ログイン後の画面に戻る
 header('Location: index.php');
