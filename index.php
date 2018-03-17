@@ -54,17 +54,65 @@ $stmt->execute($data);
 // $login_data =array();
 
 
+
+// ページング機能（ページネーションともいう）今何ページか分かるやつ
+// 空の変数を用意 エラー出さないように。
+$page = '';
+
+// パラメータが存在していたら、ページ番号を代入
+if (isset($_GET['page'])) {
+  $page = $_GET['page'];
+} else{
+  $page = 1;
+}
+
+echo'<br>';
+echo'<br>';
+echo'<br>';
+
+
+
+// 1以下のイレギュラーな数字が入って来たときに、ページ番号を強制的に１とする
+// max カンマ区切りで羅列された数字の中から最大の数字を取得する。
+$page = max($page, 1);
+
+// 1ページ分の表示件数を指定
+$page_number = 5;
+
+// データの件数から最大ページを計算する。
+$page_sql = 'SELECT COUNT(*) AS `page_count` FROM `tweets` WHERE `delete_flag`=0';
+$page_stmt = $dbh->prepare($page_sql);
+$page_stmt->execute();
+
+
+// 全件取得（論理削除されていないもの
+$page_count = $page_stmt->fetch(PDO::FETCH_ASSOC);
+
+// ceil 小数点切り上げ
+// １〜5は１ページ　６〜１０は２ぺーじ。。。
+
+$all_page_number = ceil($page_count['page_count'] / $page_number);
+
+// パラメータのページ番号が最大ページを超えていれば、強制的に最後のページとする
+// min カンマ区切りで羅列された数字の中から最小の数字を取得する。
+
+$page = min($page, $all_page_number);
+
+// 表示するデータの取得開始場所 最初は０、次は５、次は１０
+$start = ($page -1) * $page_number;
+
+
 // 一覧用の投稿全件取得
 // INNER JOIN と　OUTER JOIN(left join と　right join) デーブル結合時に使用。
 // INNER JOIN = 両方のテーブルに存在するデータのみ取得
 // OUTER JOIN (left joinとright join)=複数のテーブルがあり、それらを結合する時に優先デーブルを一つ決め、そこにある情報は全て表示しながら、他のデーブルの情報に対になるデータがあれば表示する。
 
 // 優先テーブルに指定されると、そのテーブルの情報を全て表示される。
+// LIMIT = テーブルから取得する範囲を指定
+// LIMIT 取得する配列のキー、取得する数
 
+$tweet_sql = "SELECT `tweets`.*, `members`.`nick_name`,`members`.`picture_path` FROM `tweets` LEFT JOIN `members` ON `tweets`.`member_id`=`members`.`member_id` WHERE `delete_flag`=0 ORDER BY `tweets`.`modified` DESC lIMIT " .$start.",".$page_number."";
 
-
-
-$tweet_sql = 'SELECT * FROM `tweets` LEFT JOIN `members` ON `tweets`.`member_id`=`members`.`member_id` WHERE `delete_flag`=0 ORDER BY `tweets`.`modified` DESC';
 $tweet_stmt = $dbh->prepare($tweet_sql);
 $tweet_stmt->execute();
 
@@ -145,9 +193,20 @@ while (true) {
           <ul class="paging">
             <input type="submit" class="btn btn-info" value="つぶやく">
                 &nbsp;&nbsp;&nbsp;&nbsp;
-                <li><a href="index.html" class="btn btn-default">前</a></li>
+                <?php if ($page == 1) { ?>
+                  <li>前</li>
+                  <?php } else { ?>
+                <li><a href="index.php?page=<?php echo $page -1; ?>" class="btn btn-default">前</a></li>
+                <?php } ?>
                 &nbsp;&nbsp;|&nbsp;&nbsp;
-                <li><a href="index.html" class="btn btn-default">次</a></li>
+                <!-- 最後のページの時、（次）のボタンを押せないようにする -->
+                <?php if ($page == $all_page_number) { ?>
+                <li>次</li>
+               <?php } else { ?>
+                <li><a href="index.php?page=<?php echo $page +1; ?>" class="btn btn-default">次</a></li>
+                <?php } ?>
+                <!-- 現在のページ　と　最大のページ -->
+                <li><?php echo $page; ?> / <?php echo $all_page_number; ?></li>
           </ul>
         </form>
       </div>
@@ -158,11 +217,14 @@ while (true) {
           <img src="picture_path/<?php echo $one_tweet['picture_path']; ?>" width="48" height="48">
           <p>
             <?php echo $one_tweet['tweet']; ?><span class="name"> (<?php echo $one_tweet['nick_name']; ?>) </span>
-            [<a href="#">Re</a>]
+            <?php if ($_SESSION['id'] != $one_tweet['member_id']) { ?>
+            [<a href="reply.php?tweet_id=<?php echo $one_tweet['tweet_id'];?>">Re</a>]
+            <?php } ?>
           </p>
           <p class="day">
-            <a href="view.html">
-              <?php echo $one_tweet["modified"];
+            <a href="view.php?tweet_id=<?php echo $one_tweet['tweet_id'];?>">
+              <?php
+              $modify_date = $one_tweet['modified'];
               // strtotime 文字型のデータを日時型に変換できる
               $modify_date = date("Y-m-d H:i",strtotime($modify_date));
 
@@ -171,8 +233,16 @@ while (true) {
                ?>
 
             </a>
+
+            <?php if ($_SESSION['id'] == $one_tweet['member_id']) { ?>
+
             [<a href="edit.php?tweet_id=<?php echo $one_tweet['tweet_id'];?>" style="color: green;">編集</a>]
             [<a href="delete.php?tweet_id=<?php echo $one_tweet['tweet_id'];?>" style="color: #F33;">削除</a>]
+          <?php } ?>
+
+          <?php if ($one_tweet['reply_tweet_id'] >=1) { ?>
+          [<a href="view.php?tweet_id=<?php echo $one_tweet['reply_tweet_id'];?>" style="color: blue;">返信元のメッセージを表示</a>]
+          <?php } ?>
           </p>
         </div>
         <?php } ?>
